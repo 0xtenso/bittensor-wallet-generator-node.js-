@@ -32,7 +32,7 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
 
         const keyring = new Keyring({ type: 'sr25519' });
 
-        console.log('\n=== Creating Coldkey ===');
+        console.log('\nCreating Coldkey');
         // Generate coldkey mnemonic
         const coldkeyMnemonic = mnemonicGenerate(12);
         console.log(`Coldkey mnemonic: ${coldkeyMnemonic}`);
@@ -40,7 +40,7 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
         // Create coldkey pair
         const coldkeyPair = keyring.addFromMnemonic(coldkeyMnemonic);
         
-        console.log('\n=== Creating Hotkey ===');
+        console.log('\nCreating Hotkey');
         // Generate hotkey mnemonic
         const hotkeyMnemonic = mnemonicGenerate(12);
         console.log(`Hotkey mnemonic: ${hotkeyMnemonic}`);
@@ -204,9 +204,7 @@ async function main() {
         const walletInfo = await createNewWallet('test_wallet');
 
         if (walletInfo.success) {
-            console.log('\n' + '='.repeat(50));
             console.log('WALLET INFORMATION');
-            console.log('='.repeat(50));
             console.log(`Name: ${walletInfo.wallet_name}`);
             console.log(`Coldkey Address: ${walletInfo.coldkey_address}`);
             console.log(`Hotkey Address: ${walletInfo.hotkey_address}`);
@@ -223,13 +221,6 @@ async function main() {
             const outputFile = `${walletInfo.wallet_name}_info.json`;
             await fs.writeFile(outputFile, JSON.stringify(publicInfo, null, 2));
             console.log(`\nWallet info saved to ${outputFile}`);
-
-            console.log('\n' + '='.repeat(50));
-            console.log('SECURITY WARNING');
-            console.log('='.repeat(50));
-            console.log('IMPORTANT: Store your mnemonic phrases in a secure location!');
-            console.log('Anyone with access to these mnemonics can control your wallet.');
-            console.log('The mnemonics are saved in the wallet files - keep them safe!');
         } else {
             console.error(`Failed to create wallet: ${walletInfo.error}`);
         }
