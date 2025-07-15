@@ -1,0 +1,24 @@
+{
+  "name": "bittensor-wallet-generator",
+  "version": "1.0.0",
+  "description": "Bittensor wallet generator for Node.js",
+  "main": "wallet_generator.js",
+  "scripts": {
+    "start": "node wallet_generator.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@polkadot/keyring": "^12.6.2",
+    "@polkadot/util": "^12.6.2",
+    "@polkadot/util-crypto": "^12.6.2"
+  },
+  "keywords": [
+    "bittensor",
+    "wallet",
+    "cryptocurrency",
+    "substrate",
+    "polkadot"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
