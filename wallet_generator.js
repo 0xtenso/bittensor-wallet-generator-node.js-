@@ -11,12 +11,15 @@ async function initializeCrypto() {
 
 /**
  * Creates a new Bittensor wallet and returns address information
+ * This generates a wallet compatible with the TAO mainnet using the SS58 format
+ * 
  * @param {string} walletName - Name of the wallet
  * @param {string} walletPath - Path where wallet files will be stored
  * @param {boolean} overwrite - Whether to overwrite existing wallet files
+ * @param {boolean} isMainnet - Whether to create a wallet for mainnet (default: true)
  * @returns {Promise<Object>} Wallet creation result
  */
-async function createNewWallet(walletName = 'default', walletPath = './wallets', overwrite = true) {
+async function createNewWallet(walletName = 'default', walletPath = './wallets', overwrite = true, isMainnet = true) {
     const result = {
         success: false,
         wallet_name: walletName,
@@ -25,16 +28,19 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
         coldkey_mnemonic: '',
         hotkey_mnemonic: '',
         coldkey_private_key: '',
-        hotkey_private_key: ''
+        hotkey_private_key: '',
+        network: isMainnet ? 'TAO Mainnet' : 'Testnet'
     };
 
     try {
         // Ensure wallet directory exists
         await fs.mkdir(walletPath, { recursive: true });
 
-        const keyring = new Keyring({ type: 'sr25519' });
+        // Use the correct SS58 format for Bittensor network
+        // Bittensor uses the default Substrate format (42)
+        const keyring = new Keyring({ type: 'sr25519', ss58Format: 42 });
 
-        console.log('\nCreating Coldkey');
+        console.log(`\nCreating Coldkey for ${result.network}`);
         // Generate coldkey mnemonic
         const coldkeyMnemonic = mnemonicGenerate(12);
         console.log(`Coldkey mnemonic: ${coldkeyMnemonic}`);
@@ -44,6 +50,7 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
         // Extract private key from mnemonic
         const coldkeyPrivateKey = u8aToHex(mnemonicToMiniSecret(coldkeyMnemonic));
         console.log(`Coldkey private key: ${coldkeyPrivateKey}`);
+        console.log(`Coldkey SS58 Address: ${coldkeyPair.address}`);
         
         console.log('\nCreating Hotkey');
         // Generate hotkey mnemonic
@@ -55,6 +62,7 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
         // Extract private key from mnemonic
         const hotkeyPrivateKey = u8aToHex(mnemonicToMiniSecret(hotkeyMnemonic));
         console.log(`Hotkey private key: ${hotkeyPrivateKey}`);
+        console.log(`Hotkey SS58 Address: ${hotkeyPair.address}`);
 
         // Save coldkey files
         const coldkeyDir = path.join(walletPath, walletName, 'coldkey');
@@ -66,11 +74,27 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
             address: coldkeyPair.address,
             publicKey: u8aToHex(coldkeyPair.publicKey),
             privateKey: coldkeyPrivateKey,
-            created: new Date().toISOString()
+            created: new Date().toISOString(),
+            network: result.network
         };
         
         if (overwrite || !await fileExists(coldkeyFile)) {
             await fs.writeFile(coldkeyFile, JSON.stringify(coldkeyData, null, 2));
+        }
+
+        // Save coldkeypub.txt (similar to Bittensor CLI wallet format)
+        const coldkeyPubFile = path.join(coldkeyDir, 'coldkeypub.txt');
+        const coldkeyPubData = {
+            accountId: u8aToHex(coldkeyPair.publicKey),
+            publicKey: u8aToHex(coldkeyPair.publicKey),
+            privateKey: null,
+            secretPhrase: null,
+            secretSeed: null,
+            ss58Address: coldkeyPair.address
+        };
+        
+        if (overwrite || !await fileExists(coldkeyPubFile)) {
+            await fs.writeFile(coldkeyPubFile, JSON.stringify(coldkeyPubData, null, 2));
         }
 
         // Save hotkey files
@@ -83,7 +107,8 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
             address: hotkeyPair.address,
             publicKey: u8aToHex(hotkeyPair.publicKey),
             privateKey: hotkeyPrivateKey,
-            created: new Date().toISOString()
+            created: new Date().toISOString(),
+            network: result.network
         };
         
         if (overwrite || !await fileExists(hotkeyFile)) {
@@ -98,7 +123,7 @@ async function createNewWallet(walletName = 'default', walletPath = './wallets',
         result.coldkey_private_key = coldkeyPrivateKey;
         result.hotkey_private_key = hotkeyPrivateKey;
 
-        console.log(`\nWallet '${walletName}' created successfully!`);
+        console.log(`\nWallet '${walletName}' created successfully on ${result.network}!`);
         console.log(`Coldkey Address: ${result.coldkey_address}`);
         console.log(`Hotkey Address: ${result.hotkey_address}`);
 
@@ -266,24 +291,26 @@ async function fileExists(filePath) {
  * Main function to demonstrate wallet creation
  */
 async function main() {
-    console.log('BITTENSOR WALLET GENERATOR (Node.js)');
+    console.log('BITTENSOR WALLET GENERATOR (Node.js) - TAO MAINNET');
     
     try {
         // Initialize cryptographic functions
         await initializeCrypto();
 
-        // Create a new wallet
-        const walletInfo = await createNewWallet('test_wallet');
+        // Create a new wallet for TAO mainnet
+        const walletInfo = await createNewWallet('tao_mainnet_wallet', './wallets', true, true);
 
         if (walletInfo.success) {
-            console.log('WALLET INFORMATION');
+            console.log('\nWALLET INFORMATION');
             console.log(`Name: ${walletInfo.wallet_name}`);
+            console.log(`Network: ${walletInfo.network}`);
             console.log(`Coldkey Address: ${walletInfo.coldkey_address}`);
             console.log(`Hotkey Address: ${walletInfo.hotkey_address}`);
             
             // Save to JSON (excluding sensitive mnemonic data)
             const publicInfo = {
                 wallet_name: walletInfo.wallet_name,
+                network: walletInfo.network,
                 coldkey_address: walletInfo.coldkey_address,
                 hotkey_address: walletInfo.hotkey_address,
                 created: new Date().toISOString(),
